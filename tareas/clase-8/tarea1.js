@@ -10,34 +10,39 @@ document.querySelector("#generate-members").onclick = (event) => {
   const $membersAmount = document.querySelector("#members-amount");
   const membersAmount = Number($membersAmount.value);
 
-  const errors = {
-    'get-members': validateMemberAmount(membersAmount),
-  };
+  const error = validateMemberAmount(membersAmount);
 
-  if (handleErrors(errors) === 0) {
+  if (!error) {
     deletePreviousMembers();
+    removePreviousErrors("get-members");
     hideElement("#results");
     createMembers(membersAmount);
+  } else {
+    handleErrors(error, "get-members");
   }
 
   event.preventDefault();
 };
 
 document.querySelector("#calculate").onclick = (event) => {
-  const numbers = getMembersAge();
+  const ages = getMembersAges();
 
-  const errors = {
-    "members": validateMembersAge(numbers)
-  };
+  const error = validateMembersAges(ages);
 
-  if(handleErrors(errors) === 0){
-    showAge("oldest", getOldest(numbers));
-    showAge("youngest", getYoungest(numbers));
-    showAge("avarage", getAvarage(numbers));
-  
+  const oldestId = "oldest";
+  const youngestId = "youngest";
+  const averageId = "average";
+
+  if (!error) {
+    removePreviousErrors("members");
+    showAge(oldestId, getOldest(ages));
+    showAge(youngestId, getYoungest(ages));
+    showAge(averageId, getAverage(ages));
+
     showElement("#results");
+  } else {
+    handleErrors(error, "members");
   }
-
 };
 
 document.querySelector("#reset").onclick = reset;
@@ -66,8 +71,8 @@ function createMember(index) {
 
   const $label = document.createElement("label");
   $label.textContent = `Family member #${index + 1} age`;
-  $label.className = "align-self-center"
-  
+  $label.className = "align-self-center";
+
   const $input = document.createElement("input");
   $input.className = "w-25 form-control member-age";
   $input.type = "number";
@@ -78,7 +83,7 @@ function createMember(index) {
   document.querySelector("#members").appendChild($div);
 }
 
-function getMembersAge() {
+function getMembersAges() {
   const $membersAge = document.querySelectorAll(".member-age");
   const membersAge = [];
   for (let i = 0; i < $membersAge.length; i++) {
@@ -91,19 +96,19 @@ function showAge(id, value) {
   document.querySelector(`#${id}-age`).textContent = value;
 }
 
-function getOldest(numbers) {
-  return Math.max(...numbers);
+function getOldest(ages) {
+  return Math.max(...ages);
 }
 
-function getYoungest(numbers) {
-  return Math.min(...numbers);
+function getYoungest(ages) {
+  return Math.min(...ages);
 }
 
-function getAvarage(numbers) {
-  const sum = numbers.reduce((accumulator, currentValue) => {
+function getAverage(ages) {
+  const sum = ages.reduce((accumulator, currentValue) => {
     return accumulator + currentValue;
   });
-  return sum / numbers.length;
+  return sum / ages.length;
 }
 
 function showElement(id) {
@@ -124,64 +129,51 @@ function reset() {
 function validateMemberAmount(number) {
   if (!Number.isInteger(number)) {
     return "El numero de integrantes no puede ser un numero decimal";
-  } else if (!/^[0-9]+$/.test(number)) {
+  }
+  if (!/^[0-9]+$/.test(number)) {
     return "Ingrese un numero positivo";
-  } else {
-    return "";
   }
 }
 
-function validateMembersAge(age) {
-  const invalidAge = age.filter((currentValue) => {
-    return !Number.isInteger(currentValue) || !/^[0-9]+$/.test(currentValue);
-  });
-  
-  if (invalidAge.length === 0) {
-    return "";
-  } else {
+function validateMembersAges(ages) {
+  if (
+    ages.some((currentValue) => {
+      return !Number.isInteger(currentValue) || !/^[0-9]+$/.test(currentValue);
+    })
+  ) {
     return "Las edades no pueden ser numeros decimales ni negativos";
   }
 }
 
-function handleErrors(errors) {
-  const errorsKeys = Object.keys(errors);
-  let errorCount = 0;
+function handleErrors(error, id) {
+  removePreviousErrors(id);
+  hideElement("#results");
 
-  errorsKeys.forEach((key) => {
-    const error = errors[key];
-
-    if (error) {
-      errorCount++;
-      removePreviousErrors();
-
-      const $node = document.querySelector(`#${key}`);
-      $node.querySelectorAll('input').forEach((input) => {
-        input.classList.add("error");
-        input.classList.remove("form-control");
-      });
-
-      const $errors = document.querySelector("#errors");
-
-      const $alert = document.createElement("div");
-      $alert.id = "error";
-      $alert.textContent = error;
-      $alert.className = "alert alert-danger";
-
-      $errors.appendChild($alert);
-    } else {
-      removePreviousErrors();
-      
-      const $node = document.querySelector(`#${key}`);
-      $node.querySelectorAll('input').forEach((input) => {
-        input.classList.remove("error");
-        input.classList.add("form-control");
-      });
-    }
+  const $node = document.querySelector(`#${id}`);
+  $node.querySelectorAll("input").forEach((input) => {
+    input.classList.add("error");
+    input.classList.remove("form-control");
   });
-  return errorCount;
+
+  const $errors = document.querySelector("#errors");
+
+  const $alert = document.createElement("div");
+  $alert.id = "error";
+  $alert.textContent = error;
+  $alert.className = "alert alert-danger";
+
+  $errors.appendChild($alert);
 }
 
-function removePreviousErrors() {
+function removePreviousErrors(id = "") {
+  if (id) {
+    const $node = document.querySelector(`#${id}`);
+    $node.querySelectorAll("input").forEach((input) => {
+      input.classList.remove("error");
+      input.classList.add("form-control");
+    });
+  }
+
   const $errors = document.querySelectorAll("#error");
 
   for (const error of $errors) {

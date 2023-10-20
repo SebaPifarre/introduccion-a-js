@@ -16,18 +16,18 @@ function addMember() {
   const $div = document.createElement("div");
   const newId = idCounter;
   idCounter += 1;
-  
+
   $div.className = `member${newId}`;
   $div.classList.add("d-flex", "gap-3", "m-2");
 
   const $label = document.createElement("label");
   $label.textContent = "Member salary";
-  $label.className = "align-self-center p-2 me-auto"
+  $label.className = "align-self-center p-2 me-auto";
 
   const $input = document.createElement("input");
   $input.type = "number";
   $input.className = "p-2";
-  
+
   const $button = document.createElement("button");
   $button.type = "button";
   $button.textContent = "X";
@@ -48,23 +48,31 @@ function removeMember(id) {
   hideElement("#results");
   if (document.querySelector("#members").childElementCount === 0) {
     hideElement("#calculate");
+    removePreviousErrors();
   }
 }
 
 document.querySelector("#calculate").onclick = () => {
   const salaries = getSalaries();
 
-  const errors = {
-    members: validateSalaries(salaries),
-  };
+  const error = validateSalaries(salaries);
 
-  if (salaries.length > 0 && handleErrors(errors) === 0) {
-    showSalary("highest", getHighest(salaries));
-    showSalary("lowest", getLowest(salaries));
-    showSalary("avarage-anual", getAvarageAnual(salaries));
-    showSalary("avarage-monthly", getAvarageMonthly(salaries));
+  const highestId = "highest";
+  const lowestId = "lowest";
+  const averageAnualId = "average-anual";
+  const averageMonthlyId = "average-monthly";
+
+  if (!error) {
+    removePreviousErrors('members');
+
+    showSalary(highestId, getHighest(salaries));
+    showSalary(lowestId, getLowest(salaries));
+    showSalary(averageAnualId, getAverageAnual(salaries));
+    showSalary(averageMonthlyId, getAverageMonthly(salaries));
 
     showElement("#results");
+  } else {
+    handleErrors(error, 'members');
   }
 };
 
@@ -73,7 +81,7 @@ function getSalaries() {
   const numbers = [];
 
   for (let i = 0; i < $numbers.length; i++) {
-      numbers.push(Number($numbers[i].value));
+    numbers.push(Number($numbers[i].value));
   }
 
   return numbers;
@@ -91,15 +99,15 @@ function getLowest(numbers) {
   return Math.min(...numbers);
 }
 
-function getAvarageAnual(numbers) {
+function getAverageAnual(numbers) {
   const sum = numbers.reduce((accumulator, currentValue) => {
     return accumulator + currentValue;
   });
   return sum / numbers.length;
 }
-function getAvarageMonthly(numbers) {
+function getAverageMonthly(numbers) {
   const months = 12;
-  return getAvarageAnual(numbers) / months;
+  return getAverageAnual(numbers) / months;
 }
 
 function showElement(id) {
@@ -111,55 +119,40 @@ function hideElement(id) {
 }
 
 function validateSalaries(salaries) {
-  const invalidSalary = salaries.filter((currentValue) => {
-    return currentValue <= 0;
-  });
-
-  if (invalidSalary.length > 0) {
+  if (salaries.some((currentValue) => {return currentValue <= 0})) {
     return "Ingrese salarios positivos y distinto de 0";
-  } else {
-    return "";
-  }
+  } 
 }
 
-function handleErrors(errors) {
-  const errorKeys = Object.keys(errors);
-  let errorCounter = 0;
+function handleErrors(error, id) {
+  removePreviousErrors();
+  hideElement("#results");
 
-  errorKeys.forEach((key) => {
-    const error = errors[key];
+  const $errors = document.querySelector("#errors");
 
-    if (error) {
-      removePreviousErrors();
-      errorCounter++;
-      const $errors = document.querySelector("#errors");
+  const $div = document.createElement("div");
+  $div.id = "error";
+  $div.textContent = error;
+  $div.className = "alert alert-danger";
 
-      const $div = document.createElement("div");
-      $div.id = "error";
-      $div.textContent = error;
-      $div.className = "alert alert-danger"
+  $errors.appendChild($div);
 
-      $errors.appendChild($div);
-
-      const $membersNode = document.querySelector(`#${key}`);
-      $membersNode.querySelectorAll('input').forEach((input) => {
-        input.className = "error"
-      });
-    } else{
-      const $membersNode = document.querySelector(`#${key}`);
-      $membersNode.querySelectorAll('input').forEach((input) => {
-        input.className = ""
-      });
-      removePreviousErrors();
-    }
+  const $membersNode = document.querySelector(`#${id}`);
+  $membersNode.querySelectorAll("input").forEach((input) => {
+    input.classList.add("error");
   });
-
-  return errorCounter;
 }
 
-function removePreviousErrors(){
+function removePreviousErrors(id = "") {
+  if (id) {
+    const $membersNode = document.querySelector(`#${id}`);
+    $membersNode.querySelectorAll("input").forEach((input) => {
+      input.classList.remove("error");
+    });
+  }
+
   const $errors = document.querySelectorAll("#error");
-  $errors.forEach((error)=>{
+  $errors.forEach((error) => {
     error.remove();
-  })
+  });
 }
